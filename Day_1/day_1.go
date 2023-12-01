@@ -5,14 +5,28 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
-func parseFile(fileName string) [][]int {
+func parseForPart1(fileName string) [][]int {
 	input := readFile(fileName)
 	fmt.Println(input)
 
 	var numbers [][]int
 	for _, line := range input {
+		numbers = append(numbers, extractNumbers(line))
+	}
+
+	return numbers
+}
+
+func parseForPart2(fileName string) [][]int {
+	input := readFile(fileName)
+	fmt.Println(input)
+
+	var numbers [][]int
+	for _, line := range input {
+		line = replaceNumberStrings(line)
 		numbers = append(numbers, extractNumbers(line))
 	}
 
@@ -35,19 +49,6 @@ func readFile(fileName string) []string {
 }
 
 func extractNumbers(line string) []int {
-	numberStrings := map[string]int{
-		"zero":  0,
-		"one":   1,
-		"two":   2,
-		"three": 3,
-		"four":  4,
-		"five":  5,
-		"six":   6,
-		"seven": 7,
-		"eight": 8,
-		"nine":  9,
-	}
-
 	fmt.Println("Extracting numbers from ", line)
 	var ans []int
 	for i := 0; i < len(line); i++ {
@@ -60,8 +61,44 @@ func extractNumbers(line string) []int {
 	return ans
 }
 
+func replaceNumberStrings(line string) string {
+	numberStrings := map[string]string{
+		"zero":  "z0o",
+		"one":   "o1e",
+		"two":   "t2o",
+		"three": "t3e",
+		"four":  "f4r",
+		"five":  "f5e",
+		"six":   "s6x",
+		"seven": "s7n",
+		"eight": "e8t",
+		"nine":  "n9e",
+	}
+
+	fmt.Println("Replacing number strings in ", line)
+	for k, v := range numberStrings {
+		line = strings.ReplaceAll(line, k, v)
+	}
+	return line
+}
+
 func playPart1(fileName string) int {
-	input := parseFile(fileName)
+	input := parseForPart1(fileName)
+	fmt.Println(input)
+
+	ans := 0
+	for _, line := range input {
+		if len(line) == 0 {
+			panic("No numbers found, exciting")
+		}
+		ans += line[0]*10 + line[len(line)-1]
+	}
+
+	return ans
+}
+
+func playPart2(fileName string) int {
+	input := parseForPart2(fileName)
 	fmt.Println(input)
 
 	ans := 0
@@ -90,28 +127,17 @@ func main() {
 	}
 	fmt.Println("Part 0 passed")
 
-	/*lines = parseFile("input.txt", false)
-	// fmt.Println(lines)
-	score, _ = resolve_lines(lines, 2)
-	fmt.Println(score)
-	if score != 5576 {
+	retVal = playPart2("test1.txt")
+	fmt.Println(retVal)
+	if retVal != 281 {
+		panic("Test 1 failed")
+	}
+	fmt.Println("Test 1 passed")
+
+	retVal = playPart2("input.txt")
+	fmt.Println(retVal)
+	if retVal != 54885 {
 		panic("Part 1 failed")
 	}
-
-	lines = parseFile("test.txt", true)
-	fmt.Println(lines)
-	score, coords = resolve_lines(lines, 2)
-	fmt.Println(coords)
-	fmt.Println(score)
-	if score != 12 {
-		panic("Test 2 failed")
-	}
-
-	lines = parseFile("input.txt", true)
-	fmt.Println(lines)
-	score, _ = resolve_lines(lines, 2)
-	fmt.Println(score)
-	if ssumcore != 18144 {
-		panic("Part 2 failed")
-	}*/
+	fmt.Println("Part 1 passed")
 }
