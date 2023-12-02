@@ -32,16 +32,10 @@ func parseForPart1(input []string) []Game {
 				//fmt.Println(idx, numBalls, currPlay, plays)
 			}
 			newGame.plays[len(newGame.plays)] = currPlay
-			fmt.Println("Play: ", currPlay, "Plays: ", newGame.plays)
 		}
 		retVal = append(retVal, newGame)
-		fmt.Println("Finished!!   Line: ", idx+1, "Game: ", newGame)
 	}
 	return retVal
-}
-
-func parseForPart2(fileName string) [][]int {
-	return nil
 }
 
 func readFile(fileName string) []string {
@@ -54,19 +48,15 @@ func readFile(fileName string) []string {
 func playPart1(fileName string) int {
 	lines := readFile(fileName)
 	games := parseForPart1(lines)
-	fmt.Println(games)
 	reference := map[string]int{
 		"red":   12,
 		"green": 13,
 		"blue":  14,
 	}
-	fmt.Println("Reference: ", reference)
 	result := 0
 	for _, game := range games {
 		playFound := false
-		fmt.Println("Game: ", game, game.plays[0], len(game.plays[0]))
 		for _, play := range game.plays {
-			fmt.Println("Play: ", play)
 			for color, balls := range reference {
 				if play[color] > balls {
 					playFound = true
@@ -83,8 +73,26 @@ func playPart1(fileName string) int {
 }
 
 func playPart2(fileName string) int {
+	lines := readFile(fileName)
+	games := parseForPart1(lines)
+	result := 0
+	for _, game := range games {
+		minBalls := map[string]int{
+			"red":   0,
+			"green": 0,
+			"blue":  0,
+		}
+		for _, play := range game.plays {
+			for color, currMin := range minBalls {
+				if currMin < play[color] {
+					minBalls[color] = play[color]
+				}
+			}
+		}
+		result = result + minBalls["red"]*minBalls["green"]*minBalls["blue"]
+	}
 
-	return 0
+	return result
 }
 
 func main() {
@@ -104,14 +112,14 @@ func main() {
 
 	retVal = playPart2("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 281 {
+	if retVal != 2286 {
 		panic("Test 1 failed")
 	}
 	fmt.Println("Test 1 passed")
 
 	retVal = playPart2("input.txt")
 	fmt.Println(retVal)
-	if retVal != 54885 {
+	if retVal != 58269 {
 		panic("Part 1 failed")
 	}
 	fmt.Println("Part 1 passed")
