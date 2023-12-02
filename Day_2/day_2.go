@@ -24,12 +24,10 @@ func parseForPart1(input []string) []Game {
 		r := regexp.MustCompile("(, +)|( +)")
 		for _, gameString := range gameStrings {
 			playStrings := r.Split(gameString, -1)
-			//fmt.Println(playStrings, len(playStrings), plays)
 			currPlay := make(map[string]int)
 			for idx := 0; idx+1 <= len(playStrings); idx = idx + 2 {
 				numBalls, _ := strconv.Atoi(playStrings[idx])
 				currPlay[strings.TrimSpace(playStrings[idx+1])] = numBalls
-				//fmt.Println(idx, numBalls, currPlay, plays)
 			}
 			newGame.plays[len(newGame.plays)] = currPlay
 		}
@@ -68,7 +66,6 @@ func playPart1(fileName string) int {
 			result = result + game.id
 		}
 	}
-
 	return result
 }
 
@@ -91,7 +88,6 @@ func playPart2(fileName string) int {
 		}
 		result = result + minBalls["red"]*minBalls["green"]*minBalls["blue"]
 	}
-
 	return result
 }
 
