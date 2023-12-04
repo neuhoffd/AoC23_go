@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 )
 
 type Card struct {
-	number       int
 	winning, own []int
 }
 
@@ -16,11 +18,26 @@ func parseForPart1(input []string) []Card {
 	cards := []Card{}
 
 	for _, line := range input {
-		r := regexp.MustCompile(`\s|\|`)
+		parsingWinning := true
+		actCard := Card{}
+		r := regexp.MustCompile(`\||\s+`)
 		splits := r.Split(line, -1)
 		fmt.Println(splits)
+		for _, part := range splits[2:] {
+			if part == "" {
+				parsingWinning = false
+				continue
+			}
+			val, _ := strconv.Atoi(part)
+			if parsingWinning {
+				actCard.winning = append(actCard.winning, val)
+			} else {
+				actCard.own = append(actCard.own, val)
+			}
+		}
+		cards = append(cards, actCard)
 	}
-	return []Card{}
+	return cards
 }
 
 func readFile(fileName string) []string {
@@ -32,9 +49,24 @@ func readFile(fileName string) []string {
 
 func playPart1(fileName string) int {
 	input := readFile(fileName)
+	cards := parseForPart1(input)
+	result := 0
+	for idx, card := range cards {
+		count := 0
+		for _, winner := range card.winning {
+			if slices.Contains(card.own, winner) {
+				count++
+			}
+		}
+		score := 0
+		if count > 0 {
+			score = int(math.Pow(2, float64(count-1)))
+		}
+		result += score
+		fmt.Printf("Card %d, Count: %d Score: %d \n", idx, count, score)
+	}
 
-	fmt.Println(input)
-	return 0
+	return result
 }
 
 func playPart2(fileName string) int {
