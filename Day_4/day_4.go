@@ -3,11 +3,24 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 )
 
-func parseForPart1(input []string) {
+type Card struct {
+	number       int
+	winning, own []int
+}
 
+func parseForPart1(input []string) []Card {
+	cards := []Card{}
+
+	for _, line := range input {
+		r := regexp.MustCompile(`\s|\|`)
+		splits := r.Split(line, -1)
+		fmt.Println(splits)
+	}
+	return []Card{}
 }
 
 func readFile(fileName string) []string {
@@ -18,8 +31,9 @@ func readFile(fileName string) []string {
 }
 
 func playPart1(fileName string) int {
-	lines := readFile(fileName)
-	fmt.Println(lines)
+	input := readFile(fileName)
+
+	fmt.Println(input)
 	return 0
 }
 
@@ -31,7 +45,7 @@ func playPart2(fileName string) int {
 func main() {
 	retVal := playPart1("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 13 {
 		panic("Test 0 failed")
 	}
 	fmt.Println("Test 0 passed")
