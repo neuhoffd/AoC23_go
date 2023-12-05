@@ -93,8 +93,42 @@ func playPart1(fileName string) int {
 }
 
 func playPart2(fileName string) int {
-
-	return 0
+	lines := readFile(fileName)
+	state := parseForPart1(lines)
+	currPos := 0
+	retVal := 0
+	for currLocation := 0; true; currLocation++ {
+		if currLocation%10000000 == 0 {
+			fmt.Println("Location: ", currLocation)
+		}
+		currPos = currLocation
+		for mapIdx := len(state.maps) - 1; mapIdx >= 0; mapIdx-- {
+			currMap := state.maps[mapIdx]
+			sourceFound := false
+			for idx, currDestinationStart := range currMap.destinationStarts {
+				if currPos >= currDestinationStart && currPos < currDestinationStart+currMap.rngs[idx] {
+					currOffset := currPos - currDestinationStart
+					currPos = currMap.sourceStarts[idx] + currOffset
+					sourceFound = true
+				}
+				if sourceFound {
+					break
+				}
+			}
+		}
+		seedFound := false
+		for idx := 0; idx < len(state.seeds)-1; idx += 2 {
+			if currPos >= state.seeds[idx] && currPos < state.seeds[idx]+state.seeds[idx+1] {
+				seedFound = true
+				break
+			}
+		}
+		if seedFound {
+			retVal = currLocation
+			break
+		}
+	}
+	return retVal
 }
 
 func main() {
@@ -114,14 +148,14 @@ func main() {
 
 	retVal = playPart2("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 46 {
 		panic("Test 1 failed")
 	}
 	fmt.Println("Test 1 passed")
 
 	retVal = playPart2("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 72263011 {
 		panic("Part 1 failed")
 	}
 	fmt.Println("Part 1 passed")
