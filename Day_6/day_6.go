@@ -14,6 +14,16 @@ type Race struct {
 	waysToWin int
 }
 
+func (race *Race) determineWinOptions() {
+	winOpts := 0
+	for currHold := 0; currHold < race.time; currHold++ {
+		if currHold*(race.time-currHold) > race.distance {
+			winOpts++
+		}
+	}
+	race.waysToWin = winOpts
+}
+
 func main() {
 	retVal := playPart1("test0.txt")
 	fmt.Println(retVal)
@@ -24,21 +34,21 @@ func main() {
 
 	retVal = playPart1("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 449550 {
 		panic("Part 0 failed")
 	}
 	fmt.Println("Part 0 passed")
 
 	retVal = playPart2("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 71503 {
 		panic("Test 1 failed")
 	}
 	fmt.Println("Test 1 passed")
 
 	retVal = playPart2("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 28360140 {
 		panic("Part 1 failed")
 	}
 	fmt.Println("Part 1 passed")
@@ -47,6 +57,17 @@ func main() {
 func playPart1(fileName string) int {
 	input := readFile(fileName)
 	races := parseForPart1(input)
+	result := 1
+	for _, race := range races {
+		race.determineWinOptions()
+		result *= race.waysToWin
+	}
+	return result
+}
+
+func playPart2(fileName string) int {
+	input := readFile(fileName)
+	races := parseForPart2(input)
 	result := 1
 	for _, race := range races {
 		race.determineWinOptions()
@@ -74,24 +95,15 @@ func parseForPart1(input []string) []Race {
 	return races
 }
 
-func playPart2(fileName string) int {
+func parseForPart2(input []string) []Race {
+	input[0] = strings.TrimSpace(input[0])
+	input[1] = strings.TrimSpace(input[1])
+	strippedTimes := strings.ReplaceAll(input[0], " ", "")
+	strippedDistances := strings.ReplaceAll(input[1], " ", "")
 
-	return 0
-}
-
-func (race *Race) determineWinOptions() {
-	//winDistance <= (time - holdtime)*holdtime <=> time*holdtime - holdtime^2 - winDist> 0 <=> holdtime^2 - time*holdtime + winDist < 0
-	/*zero0 := int(math.Floor(((float64(race.time) - math.Sqrt(float64(race.time*race.time-4*race.distance))) / 2))) + 1
-	zero1 := int(math.Floor(((float64(race.time) + math.Sqrt(float64(race.time*race.time-4*race.distance))) / 2)))
-
-	race.waysToWin = zero1 - zero0
-	fmt.Printf("Race: %d   Ways to win: %d \n", race.id, race.waysToWin)*/
-	//Brute force
-	winOpts := 0
-	for currHold := 0; currHold < race.time; currHold++ {
-		if currHold*(race.time-currHold) > race.distance {
-			winOpts++
-		}
-	}
-	race.waysToWin = winOpts
+	time, _ := strconv.Atoi(strings.Split(strippedTimes, ":")[1])
+	dist, _ := strconv.Atoi(strings.Split(strippedDistances, ":")[1])
+	races := make([]Race, 0)
+	races = append(races, Race{id: 0, time: time, distance: dist})
+	return races
 }
