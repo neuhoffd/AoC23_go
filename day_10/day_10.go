@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -10,43 +11,137 @@ type Node struct {
 	tp       string
 	distance int
 	pos      []int
-	child    *Node
+	children []*Node
 	isInit   bool
+	isPipe   bool
 	id       string
 }
 
+func (node *Node) initId() {
+	node.id = fmt.Sprintf("%d_%d", node.pos[0], node.pos[1])
+}
+
 type Network struct {
-	nodeMap [][]*Node
-	grid    [][]rune
-	start   *Node
+	nodeMap    [][]*Node
+	start      *Node
+	rows, cols int
+}
+
+func (network *Network) print() {
+	for _, nodes := range network.nodeMap {
+		for _, node := range nodes {
+			fmt.Printf("%s", node.tp)
+		}
+		fmt.Printf("\n")
+	}
 }
 
 func playPart0(fileName string) int {
 	lines := readFile(fileName)
 	fmt.Println(lines)
-	return 0
+	network := parseForPart0(lines)
+	network.print()
+	network.init()
+	result := network.traverseFromStart()
+	return result
+}
+
+func (network *Network) traverseFromStart() int {
+	furthestFound := false
+	currNodes := make([]*Node, len(network.start.children))
+	numPaths := len(currNodes)
+	for i := 0; i < numPaths; i++ {
+		currNodes[i] = network.start.children[i]
+		currNodes[i].distance = 1
+	}
+	for !furthestFound {
+		oldDistance := currNodes[0].distance
+		fmt.Printf("CurrNodes %+v \n", currNodes)
+		for i := 0; i < numPaths; i++ {
+			for _, child := range currNodes[i].children {
+				if child.distance < 0 {
+					currNodes[i] = child
+					break
+				}
+			}
+		}
+		furthestFound = true
+		for i := 0; i < numPaths; i++ {
+			currNodes[i].distance = oldDistance + 1
+			furthestFound = currNodes[i] == currNodes[0] && furthestFound
+		}
+	}
+	return currNodes[0].distance
+}
+
+func (network *Network) init() {
+	offsets := map[string][][]int{
+		"|": {{-1, 0}, {1, 0}},
+		"-": {{0, -1}, {0, 1}},
+		"L": {{-1, 0}, {0, 1}},
+		"J": {{-1, 0}, {0, -1}},
+		"7": {{1, 0}, {0, -1}},
+		"F": {{1, 0}, {0, 1}},
+	}
+
+	for _, currRow := range network.nodeMap {
+		for _, currNode := range currRow {
+			currPos := currNode.pos
+			for _, offset := range offsets[currNode.tp] {
+				candidatePos := []int{currPos[0] + offset[0], currPos[1] + offset[1]}
+				if slices.Min(candidatePos) < 0 || candidatePos[0] >= network.rows || candidatePos[1] >= network.cols {
+					continue
+				}
+				currNode.children = append(currNode.children, network.nodeMap[candidatePos[0]][candidatePos[1]])
+			}
+		}
+	}
+	for rowOffset := -1; rowOffset <= 1; rowOffset++ {
+		for colOffset := -1; colOffset <= 1; colOffset++ {
+			startNode := network.start
+			candidatePos := []int{startNode.pos[0] + rowOffset, startNode.pos[1] + colOffset}
+			if slices.Min(candidatePos) < 0 || candidatePos[0] >= network.rows || candidatePos[1] >= network.cols || (colOffset == 0 && rowOffset == 0) {
+				continue
+			}
+			candidateNode := network.nodeMap[startNode.pos[0]+rowOffset][startNode.pos[1]+colOffset]
+			if slices.Contains(candidateNode.children, startNode) {
+				startNode.children = append(startNode.children, candidateNode)
+			}
+		}
+	}
+	network.start.distance = 0
 }
 
 func parseForPart0(input []string) *Network {
-
 	rows := len(input)
-	cols := len(input[0])
+	cols := len(strings.TrimSpace(input[0]))
 	ans := &Network{
 		nodeMap: make([][]*Node, rows),
-		grid:    make([][]rune, rows),
+		rows:    rows,
+		cols:    cols,
 	}
 	for row, line := range input {
+		line = strings.TrimSpace(line)
 		currChars := make([]rune, cols)
 		currNodes := make([]*Node, cols)
 		for col, char := range line {
 			currChars[col] = char
 			currNodes[col] = &Node{
-				tp:     string(char),
-				pos:    []int{row, col},
-				isInit: char == 'S',
+				tp:       string(char),
+				pos:      []int{row, col},
+				isInit:   char == 'S',
+				isPipe:   char != '.',
+				distance: -1,
+			}
+			currNodes[col].initId()
+			if currNodes[col].isInit {
+				ans.start = currNodes[col]
+				continue
 			}
 		}
+		ans.nodeMap[row] = currNodes
 	}
+	return ans
 }
 
 func playPart1(fileName string) int {
@@ -57,21 +152,21 @@ func playPart1(fileName string) int {
 func main() {
 	retVal := playPart0("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 4 {
 		panic("Test 0_0 failed")
 	}
 	fmt.Println("Test 0_0 passed")
 
 	retVal = playPart0("test1.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 8 {
 		panic("Test 0_1 failed")
 	}
 	fmt.Println("Test 0_1 passed")
 
 	retVal = playPart0("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 6754 {
 		panic("Part 0 failed")
 	}
 	fmt.Println("Part 0 passed")
