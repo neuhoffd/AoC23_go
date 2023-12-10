@@ -24,7 +24,14 @@ func playPart2(fileName string) int {
 func main() {
 	retVal := playPart1("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 2 {
+		panic("Test 0 failed")
+	}
+	fmt.Println("Test 0 passed")
+
+	retVal = playPart1("test0.txt")
+	fmt.Println(retVal)
+	if retVal != 6 {
 		panic("Test 0 failed")
 	}
 	fmt.Println("Test 0 passed")
@@ -57,4 +64,3 @@ func readFile(fileName string) []string {
 	splitInput := strings.Split(input, "\n")
 	return splitInput
 }
-
