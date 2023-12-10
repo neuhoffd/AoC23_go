@@ -11,13 +11,16 @@ import (
 
 var remap map[string]int
 
-func initRemap() {
+func initRemap(hasJoker bool) {
 	remap = map[string]int{
 		"A": 14,
 		"K": 13,
 		"Q": 12,
 		"J": 11,
 		"T": 10,
+	}
+	if hasJoker {
+		remap["J"] = 1
 	}
 }
 
@@ -90,7 +93,6 @@ func determineCardTypes(hands []Hand) []Hand {
 	for idx := range hands {
 		hands[idx].determineType()
 	}
-	fmt.Printf("Hands %+v \n", hands)
 	return hands
 }
 
@@ -106,7 +108,6 @@ func tieBreak(handI, handJ Hand) bool {
 		}
 	}
 	panic("Tie Found")
-	return false
 }
 
 func sortHands(hands []Hand) []Hand {
@@ -125,41 +126,39 @@ func calcWinnings(sortedHands []Hand) int {
 	for idx, currHand := range sortedHands {
 		if currHand.tp != currType {
 			currType = currHand.tp
-			fmt.Printf("Now Parsing type: %d\n", currType)
 		}
-		fmt.Printf("Current Hand: %+v\n", currHand)
 		ans += (idx + 1) * currHand.bid
-		//fmt.Println(ans)
 	}
 	return ans
 }
 
 func main() {
-	initRemap()
-	retVal := playPart1("test0.txt")
+	initRemap(false)
+	retVal := playPart1("test0.txt", false)
 	fmt.Println(retVal)
 	if retVal != 6440 {
 		panic("Test 0 failed")
 	}
 	fmt.Println("Test 0 passed")
 
-	retVal = playPart1("input.txt")
+	retVal = playPart1("input.txt", false)
 	fmt.Println(retVal)
-	if retVal != -1 {
+	if retVal != 249748283 {
 		panic("Part 0 failed")
 	}
 	fmt.Println("Part 0 passed")
 
-	retVal = playPart2("test0.txt")
+	initRemap(true)
+	retVal = playPart1("test0.txt", true)
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 5905 {
 		panic("Test 1 failed")
 	}
 	fmt.Println("Test 1 passed")
 
-	retVal = playPart2("input.txt")
+	retVal = playPart1("input.txt", true)
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 248029057 {
 		panic("Part 1 failed")
 	}
 	fmt.Println("Part 1 passed")
@@ -171,18 +170,14 @@ func readFile(fileName string) []string {
 	return splitInput
 }
 
-func playPart1(fileName string) int {
+func playPart1(fileName string, hasJoker bool) int {
 	input := readFile(fileName)
-	fmt.Println(input)
-	hands := parseForPart1(input)
-	//fmt.Printf("Hands: %+v \n", hands)
+	hands := parse(input, hasJoker)
 	hands = determineCardTypes(hands)
-	//fmt.Printf("Hands: %+v \n", hands)
 	hands = sortHands(hands)
-	//fmt.Printf("Sorted Hands: %+v \n", hands)
 	return calcWinnings(hands)
 }
-func parseForPart1(input []string) []Hand {
+func parse(input []string, hasJoker bool) []Hand {
 	hands := make([]Hand, 0)
 	for idx, line := range input {
 		splits := strings.Fields(line)
@@ -197,14 +192,24 @@ func parseForPart1(input []string) []Hand {
 			}
 			currHand.cardCounts[currHand.cards[len(currHand.cards)-1]]++
 		}
+		if hasJoker {
+			maxCardCount := -1
+			maxCardCountCard := -1
+			for k, v := range currHand.cardCounts {
+				if k == 1 {
+					continue
+				}
+				if v > maxCardCount {
+					maxCardCount = v
+					maxCardCountCard = k
+				}
+			}
+			currHand.cardCounts[maxCardCountCard] += currHand.cardCounts[1]
+			currHand.cardCounts[1] = 0
+		}
 		val, _ := strconv.Atoi(splits[1])
 		currHand.bid = val
 		hands = append(hands, currHand)
 	}
 	return hands
-}
-
-func playPart2(fileName string) int {
-
-	return 0
 }
