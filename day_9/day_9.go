@@ -84,7 +84,7 @@ func main() {
 
 	retVal = playPart1("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 1877825184 {
 		panic("Part 0 failed")
 	}
 	fmt.Println("Part 0 passed")
