@@ -14,70 +14,124 @@ type Node struct {
 }
 
 type Network struct {
-	nodeMap      map[string]*Node
-	currentPos   *Node
-	instructions string
-	steps        int
+	nodeMap       map[string]*Node
+	currPositions []*Node
+	instructions  string
+	steps         int
 }
 
-func (network *Network) makeNodeIfNotExists(id string) *Node {
+func (network *Network) makeNodeIfNotExists(id string, part2 bool) *Node {
 	newNode, ok := network.nodeMap[id]
 	if !ok {
 		newNode = &Node{
 			id:       id,
-			isRoot:   id == "AAA",
-			isTarget: id == "ZZZ",
+			isRoot:   id == "AAA" || (id[2] == 'A' && part2),
+			isTarget: id == "ZZZ" || (id[2] == 'Z' && part2),
 		}
 		network.nodeMap[id] = newNode
 	}
 	return newNode
 }
 
-func (network *Network) traverse() {
+func GCD(a, b int) int {
+	for b != 0 {
+		t := b
+		b = a % b
+		a = t
+	}
+	return a
+}
+
+func LCM(integers ...int) int {
+	result := integers[0] * integers[1] / GCD(integers[0], integers[1])
+
+	for i := 2; i < len(integers); i++ {
+		result = LCM(result, integers[i])
+	}
+
+	return result
+}
+
+func (network *Network) traversePart1() {
 	stepCounter := 0
-	for !network.currentPos.isTarget {
+	allArrived := false
+	for !allArrived {
 		currInstruction := stepCounter % len(network.instructions)
 		stepCounter++
-		if network.instructions[currInstruction] == 'L' {
-			network.currentPos = network.currentPos.children[0]
-		} else {
-			network.currentPos = network.currentPos.children[1]
+		if stepCounter%100000 == 0 {
+			fmt.Printf("Step:  %d, Positions %+v \n", stepCounter, network.currPositions)
+		}
+		allArrived = true
+		for i := 0; i < len(network.currPositions); i++ {
+			if !network.currPositions[i].isTarget {
+				allArrived = false
+			}
+			if network.instructions[currInstruction] == 'L' {
+				network.currPositions[i] = network.currPositions[i].children[0]
+			} else {
+				network.currPositions[i] = network.currPositions[i].children[1]
+			}
 		}
 	}
-	network.steps = stepCounter
+	network.steps = stepCounter - 1
+}
+
+func (network *Network) traversePart2() {
+	cycles := []int{}
+	for i := 0; i < len(network.currPositions); i++ {
+		stepCounter := 0
+		fmt.Println("Traversing Position ", i)
+		for {
+			currInstruction := stepCounter % len(network.instructions)
+			stepCounter++
+			if stepCounter%100000 == 0 {
+				fmt.Printf("Step:  %d, Positions %+v \n", stepCounter, network.currPositions)
+			}
+			if network.currPositions[i].isTarget {
+				break
+			}
+
+			if network.instructions[currInstruction] == 'L' {
+				network.currPositions[i] = network.currPositions[i].children[0]
+			} else {
+				network.currPositions[i] = network.currPositions[i].children[1]
+			}
+		}
+		cycles = append(cycles, stepCounter-1)
+	}
+	network.steps = LCM(cycles...)
 }
 
 func playPart1(fileName string) int {
 	lines := readFile(fileName)
-	fmt.Println(lines)
-	network := parseForPart1(lines)
-	fmt.Println(network)
-	network.traverse()
+	network := parse(lines, false)
+	network.traversePart1()
 	return network.steps
 }
 
-func parseForPart1(input []string) Network {
+func playPart2(fileName string) int {
+	lines := readFile(fileName)
+	network := parse(lines, true)
+	network.traversePart2()
+	return network.steps
+}
+
+func parse(input []string, partTwo bool) Network {
 	ans := Network{instructions: strings.TrimSpace(input[0]), nodeMap: make(map[string]*Node)}
 	r := regexp.MustCompile(`\w+`)
 	for _, line := range input[2:] {
 		nodeStrings := r.FindAllString(line, 3)
-		fmt.Println(nodeStrings)
 		currNodeId := nodeStrings[0]
-		currNode := ans.makeNodeIfNotExists(currNodeId)
+		currNode := ans.makeNodeIfNotExists(currNodeId, partTwo)
 		if currNode.isRoot {
-			ans.currentPos = currNode
+			ans.currPositions = append(ans.currPositions, currNode)
 		}
 		for i := 1; i <= len(currNode.children); i++ {
-			currChild := ans.makeNodeIfNotExists(nodeStrings[i])
+			currChild := ans.makeNodeIfNotExists(nodeStrings[i], partTwo)
 			currNode.children[i-1] = currChild
 		}
 	}
 	return ans
-}
-
-func playPart2(fileName string) int {
-
-	return 0
 }
 
 func main() {
@@ -91,9 +145,9 @@ func main() {
 	retVal = playPart1("test1.txt")
 	fmt.Println(retVal)
 	if retVal != 6 {
-		panic("Test 0 failed")
+		panic("Test 1 failed")
 	}
-	fmt.Println("Test 0 passed")
+	fmt.Println("Test 1 passed")
 
 	retVal = playPart1("input.txt")
 	fmt.Println(retVal)
@@ -102,19 +156,19 @@ func main() {
 	}
 	fmt.Println("Part 0 passed")
 
-	retVal = playPart2("test0.txt")
+	retVal = playPart2("test2.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
-		panic("Test 1 failed")
+	if retVal != 6 {
+		panic("Test 2 failed")
 	}
-	fmt.Println("Test 1 passed")
+	fmt.Println("Test 2 passed")
 
 	retVal = playPart2("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
-		panic("Part 1 failed")
+	if retVal != 15299095336639 {
+		panic("Part 3 failed")
 	}
-	fmt.Println("Part 1 passed")
+	fmt.Println("Part 3 passed")
 }
 
 func readFile(fileName string) []string {
