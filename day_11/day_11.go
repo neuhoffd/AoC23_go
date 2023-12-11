@@ -16,12 +16,29 @@ type Universe struct {
 	galaxies             []*Galaxy
 	emptyRows, emptyCols []bool
 	rows, cols           int
+	expandBy             int
 }
 
 func (uv *Universe) computeExpansionAddition(g1, g2 *Galaxy) int {
-	//need to compute
+	minRow := slices.Min([]int{g1.row, g2.row})
+	maxRow := slices.Max([]int{g1.row, g2.row})
+	minCol := slices.Min([]int{g1.col, g2.col})
+	maxCol := slices.Max([]int{g1.col, g2.col})
 
-	return 0
+	ans := 0
+
+	for row := minRow + 1; row < maxRow; row++ {
+		if uv.emptyRows[row] {
+			ans += uv.expandBy
+		}
+	}
+
+	for col := minCol + 1; col < maxCol; col++ {
+		if uv.emptyCols[col] {
+			ans += uv.expandBy
+		}
+	}
+	return ans
 }
 
 func (uv *Universe) getSumOfShortestPathsBwGalaxies() int {
@@ -29,24 +46,25 @@ func (uv *Universe) getSumOfShortestPathsBwGalaxies() int {
 	ans := 0
 
 	for a := 0; a < len(uv.galaxies); a++ {
-		for b := a; b < len(uv.galaxies); b++ {
-			ans += computeManhattanDistance(uv.galaxies[a], uv.galaxies[b])
+		for b := a + 1; b < len(uv.galaxies); b++ {
+			currDist := 0
+			currDist += uv.galaxies[a].computeManhattanDistance(uv.galaxies[b])
+			currDist += uv.computeExpansionAddition(uv.galaxies[a], uv.galaxies[b])
+			ans += currDist
 		}
 	}
 	return ans
 }
 
-func computeManhattanDistance(g1, g2 *Galaxy) int {
-	return int(math.Abs(float64(g1.row) - float64(g2.row) + math.Abs(float64(g1.col)-float64(g2.col))))
+func (g1 *Galaxy) computeManhattanDistance(g2 *Galaxy) int {
+	return int(math.Abs(float64(g1.row)-float64(g2.row)) + math.Abs(float64(g1.col)-float64(g2.col)))
 }
 
-func playPart0(fileName string) int {
+func play(fileName string, expandBy int) int {
 	lines := readFile(fileName)
-	fmt.Println(lines)
 	universe := parseForPart0(lines)
-	fmt.Println(universe)
-
-	return 0
+	universe.expandBy = expandBy
+	return universe.getSumOfShortestPathsBwGalaxies()
 }
 
 func parseForPart0(input []string) *Universe {
@@ -81,36 +99,31 @@ func parseForPart0(input []string) *Universe {
 	return ans
 }
 
-func playPart1(fileName string) int {
-
-	return 0
-}
-
 func main() {
-	retVal := playPart0("test0.txt")
+	retVal := play("test0.txt", 1)
 	fmt.Println(retVal)
 	if retVal != 374 {
 		panic("Test 0 failed")
 	}
 	fmt.Println("Test 0 passed")
 
-	retVal = playPart0("input.txt")
+	retVal = play("input.txt", 1)
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 10033566 {
 		panic("Part 0 failed")
 	}
 	fmt.Println("Part 0 passed")
 
-	retVal = playPart1("test0.txt")
+	retVal = play("test0.txt", 99)
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 8410 {
 		panic("Test 1 failed")
 	}
 	fmt.Println("Test 1 passed")
 
-	retVal = playPart1("input.txt")
+	retVal = play("input.txt", 999999)
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 560822911938 {
 		panic("Part 1 failed")
 	}
 	fmt.Println("Part 1 passed")
