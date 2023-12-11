@@ -12,13 +12,6 @@ type Node struct {
 	distance int
 	pos      []int
 	children []*Node
-	isInit   bool
-	isPipe   bool
-	id       string
-}
-
-func (node *Node) initId() {
-	node.id = fmt.Sprintf("%d_%d", node.pos[0], node.pos[1])
 }
 
 type Network struct {
@@ -195,12 +188,9 @@ func parseForPart0(input []string) *Network {
 			currNodes[col] = &Node{
 				tp:       string(char),
 				pos:      []int{row, col},
-				isInit:   char == 'S',
-				isPipe:   char != '.',
 				distance: -1,
 			}
-			currNodes[col].initId()
-			if currNodes[col].isInit {
+			if char == 'S' {
 				ans.start = currNodes[col]
 				continue
 			}
