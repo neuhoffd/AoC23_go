@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -12,8 +14,30 @@ type Galaxy struct {
 
 type Universe struct {
 	galaxies             []*Galaxy
-	emptyRows, emptyCols []int
+	emptyRows, emptyCols []bool
 	rows, cols           int
+}
+
+func (uv *Universe) computeExpansionAddition(g1, g2 *Galaxy) int {
+	//need to compute
+
+	return 0
+}
+
+func (uv *Universe) getSumOfShortestPathsBwGalaxies() int {
+	slices.SortFunc(uv.galaxies, func(a, b *Galaxy) int { return a.id - b.id })
+	ans := 0
+
+	for a := 0; a < len(uv.galaxies); a++ {
+		for b := a; b < len(uv.galaxies); b++ {
+			ans += computeManhattanDistance(uv.galaxies[a], uv.galaxies[b])
+		}
+	}
+	return ans
+}
+
+func computeManhattanDistance(g1, g2 *Galaxy) int {
+	return int(math.Abs(float64(g1.row) - float64(g2.row) + math.Abs(float64(g1.col)-float64(g2.col))))
 }
 
 func playPart0(fileName string) int {
@@ -21,6 +45,7 @@ func playPart0(fileName string) int {
 	fmt.Println(lines)
 	universe := parseForPart0(lines)
 	fmt.Println(universe)
+
 	return 0
 }
 
@@ -28,8 +53,10 @@ func parseForPart0(input []string) *Universe {
 	rows := len(input)
 	cols := len(input[0])
 	ans := &Universe{
-		rows: rows,
-		cols: cols,
+		rows:      rows,
+		cols:      cols,
+		emptyRows: make([]bool, rows),
+		emptyCols: make([]bool, cols),
 	}
 	galaxiesFoundbyCol := make([]int, cols)
 	for row := 0; row < rows; row++ {
@@ -46,14 +73,10 @@ func parseForPart0(input []string) *Universe {
 				galaxiesFoundbyCol[col]++
 			}
 		}
-		if galaxiesFoundRow == 0 {
-			ans.emptyRows = append(ans.emptyRows, row)
-		}
+		ans.emptyRows[row] = galaxiesFoundRow == 0
 	}
 	for col := 0; col < cols; col++ {
-		if galaxiesFoundbyCol[col] == 0 {
-			ans.emptyCols = append(ans.emptyCols, col)
-		}
+		ans.emptyCols[col] = galaxiesFoundbyCol[col] == 0
 	}
 	return ans
 }
