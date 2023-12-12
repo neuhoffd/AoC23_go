@@ -12,22 +12,22 @@ type Record struct {
 	groups []byte
 }
 
-func (r *Record) dp(i, j int, cache [][]int) int {
+func (r *Record) dp(i, j int, c [][]int) int {
 	if i >= len(r.record) {
 		if j < len(r.groups) {
 			return 0
 		}
 		return 1
 	}
-	if cache[i][j] != -1 {
-		return cache[i][j]
+	if c[i][j] != -1 {
+		return c[i][j]
 	}
 	res := 0
 	if r.record[i] == '.' {
-		res += r.dp(i+1, j, cache)
+		res += r.dp(i+1, j, c)
 	} else {
 		if r.record[i] == '?' {
-			res += r.dp(i+1, j, cache)
+			res += r.dp(i+1, j, c)
 		}
 		if j < len(r.groups) {
 			damagedCount := byte(0)
@@ -39,27 +39,27 @@ func (r *Record) dp(i, j int, cache [][]int) int {
 			}
 			if damagedCount == r.groups[j] {
 				if i+int(damagedCount) < len(r.record) && r.record[i+int(damagedCount)] != '#' {
-					res += r.dp(i+int(damagedCount)+1, j+1, cache)
+					res += r.dp(i+int(damagedCount)+1, j+1, c)
 				} else {
-					res += r.dp(i+int(damagedCount), j+1, cache)
+					res += r.dp(i+int(damagedCount), j+1, c)
 				}
 			}
 		}
 	}
-	cache[i][j] = res
+	c[i][j] = res
 	return res
 }
 
 func (r *Record) countArrangements() int {
-	var cache [][]int
+	var c [][]int
 	for i := 0; i < len(r.record); i++ {
-		cache = append(cache, make([]int, len(r.groups)+1))
+		c = append(c, make([]int, len(r.groups)+1))
 		for j := 0; j < len(r.groups)+1; j++ {
-			cache[i][j] = -1
+			c[i][j] = -1
 		}
 	}
 
-	return r.dp(0, 0, cache)
+	return r.dp(0, 0, c)
 }
 
 func (r *Record) unfold(times int) {
@@ -75,15 +75,13 @@ func (r *Record) unfold(times int) {
 
 func playPart0(fileName string) int {
 	input := readFile(fileName)
-	fmt.Println(input)
 	records := parseForPart0(input)
-	fmt.Printf("Records\n%+v\n", records)
 	result := 0
 	for i, r := range records {
 		newVal := r.countArrangements()
 		result += newVal
-		if i%10 == 0 {
-			fmt.Printf("Record: %+v\nCount: %d\nResult: %d\n", *r, newVal, result)
+		if i%100 == 0 {
+			fmt.Printf("Record %d: %+v\nCount: %d\nResult: %d\n\n", i, *r, newVal, result)
 		}
 	}
 	return result
@@ -91,16 +89,14 @@ func playPart0(fileName string) int {
 
 func playPart1(fileName string) int {
 	input := readFile(fileName)
-	fmt.Println(input)
 	records := parseForPart0(input)
-	fmt.Printf("Records\n%+v\n", records)
 	result := 0
 	for i, r := range records {
 		r.unfold(5)
 		newVal := r.countArrangements()
 		result += newVal
-		if i%10 == 0 {
-			fmt.Printf("Record: %+v\nCount: %d\nResult: %d\n\n", *r, newVal, result)
+		if i%100 == 0 {
+			fmt.Printf("Record %d: %+v\nCount: %d\nResult: %d\n\n", i, *r, newVal, result)
 		}
 	}
 	return result
@@ -148,7 +144,7 @@ func main() {
 
 	retVal = playPart1("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 1738259948652 {
 		panic("Part 1 failed")
 	}
 	fmt.Println("Part 1 passed")
