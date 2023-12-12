@@ -7,8 +7,8 @@ import (
 )
 
 func playPart0(fileName string) int {
-	lines := readFile(fileName)
-	fmt.Println(lines)
+	input := readFile(fileName)
+	fmt.Println(input)
 	return 0
 }
 

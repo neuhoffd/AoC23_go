@@ -3,17 +3,39 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
+type Record struct {
+	record []byte
+	groups []byte
+}
+
 func playPart0(fileName string) int {
-	lines := readFile(fileName)
-	fmt.Println(lines)
+	input := readFile(fileName)
+	fmt.Println(input)
+	records := parseForPart0(input)
+	fmt.Printf("Records\n%+v\n", records)
 	return 0
 }
 
-func parseForPart0(input []string) {
+func parseForPart0(input []string) []*Record {
+	ans := make([]*Record, 0)
 
+	for _, line := range input {
+		newRecord := &Record{}
+		splits := strings.Fields(line)
+		for _, char := range strings.Split(splits[0], "") {
+			newRecord.record = append(newRecord.record, char[0])
+		}
+		for _, num := range strings.Split(splits[1], ",") {
+			val, _ := strconv.Atoi(num)
+			newRecord.groups = append(newRecord.groups, byte(val))
+		}
+		ans = append(ans, newRecord)
+	}
+	return ans
 }
 
 func playPart1(fileName string) int {
@@ -24,7 +46,7 @@ func playPart1(fileName string) int {
 func main() {
 	retVal := playPart0("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 21 {
 		panic("Test 0 failed")
 	}
 	fmt.Println("Test 0 passed")
