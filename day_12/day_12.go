@@ -62,16 +62,46 @@ func (r *Record) countArrangements() int {
 	return r.dp(0, 0, cache)
 }
 
+func (r *Record) unfold(times int) {
+	initRec := r.record
+	initGrps := r.groups
+
+	for i := 0; i < times-1; i++ {
+		r.record = append(r.record, '?')
+		r.record = append(r.record, initRec...)
+		r.groups = append(r.groups, initGrps...)
+	}
+}
+
 func playPart0(fileName string) int {
 	input := readFile(fileName)
 	fmt.Println(input)
 	records := parseForPart0(input)
 	fmt.Printf("Records\n%+v\n", records)
 	result := 0
-	for _, r := range records {
+	for i, r := range records {
 		newVal := r.countArrangements()
 		result += newVal
-		fmt.Printf("Record: %+v\nCount: %d\nResult: %d\n", *r, newVal, result)
+		if i%10 == 0 {
+			fmt.Printf("Record: %+v\nCount: %d\nResult: %d\n", *r, newVal, result)
+		}
+	}
+	return result
+}
+
+func playPart1(fileName string) int {
+	input := readFile(fileName)
+	fmt.Println(input)
+	records := parseForPart0(input)
+	fmt.Printf("Records\n%+v\n", records)
+	result := 0
+	for i, r := range records {
+		r.unfold(5)
+		newVal := r.countArrangements()
+		result += newVal
+		if i%10 == 0 {
+			fmt.Printf("Record: %+v\nCount: %d\nResult: %d\n\n", *r, newVal, result)
+		}
 	}
 	return result
 }
@@ -94,11 +124,6 @@ func parseForPart0(input []string) []*Record {
 	return ans
 }
 
-func playPart1(fileName string) int {
-
-	return 0
-}
-
 func main() {
 	retVal := playPart0("test0.txt")
 	fmt.Println(retVal)
@@ -109,14 +134,14 @@ func main() {
 
 	retVal = playPart0("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 7169 {
 		panic("Part 0 failed")
 	}
 	fmt.Println("Part 0 passed")
 
 	retVal = playPart1("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 525152 {
 		panic("Test 1 failed")
 	}
 	fmt.Println("Test 1 passed")
