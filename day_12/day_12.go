@@ -12,12 +12,68 @@ type Record struct {
 	groups []byte
 }
 
+func (r *Record) dp(i, j int, cache [][]int) int {
+	if i >= len(r.record) {
+		if j < len(r.groups) {
+			return 0
+		}
+		return 1
+	}
+	if cache[i][j] != -1 {
+		return cache[i][j]
+	}
+	res := 0
+	if r.record[i] == '.' {
+		res += r.dp(i+1, j, cache)
+	} else {
+		if r.record[i] == '?' {
+			res += r.dp(i+1, j, cache)
+		}
+		if j < len(r.groups) {
+			damagedCount := byte(0)
+			for k := i; k < len(r.record); k++ {
+				if r.record[k] == '.' || (r.groups[j] == damagedCount && r.record[k] == '?') || damagedCount > r.groups[j] {
+					break
+				}
+				damagedCount++
+			}
+			if damagedCount == r.groups[j] {
+				if i+int(damagedCount) < len(r.record) && r.record[i+int(damagedCount)] != '#' {
+					res += r.dp(i+int(damagedCount)+1, j+1, cache)
+				} else {
+					res += r.dp(i+int(damagedCount), j+1, cache)
+				}
+			}
+		}
+	}
+	cache[i][j] = res
+	return res
+}
+
+func (r *Record) countArrangements() int {
+	var cache [][]int
+	for i := 0; i < len(r.record); i++ {
+		cache = append(cache, make([]int, len(r.groups)+1))
+		for j := 0; j < len(r.groups)+1; j++ {
+			cache[i][j] = -1
+		}
+	}
+
+	return r.dp(0, 0, cache)
+}
+
 func playPart0(fileName string) int {
 	input := readFile(fileName)
 	fmt.Println(input)
 	records := parseForPart0(input)
 	fmt.Printf("Records\n%+v\n", records)
-	return 0
+	result := 0
+	for _, r := range records {
+		newVal := r.countArrangements()
+		result += newVal
+		fmt.Printf("Record: %+v\nCount: %d\nResult: %d\n", *r, newVal, result)
+	}
+	return result
 }
 
 func parseForPart0(input []string) []*Record {
