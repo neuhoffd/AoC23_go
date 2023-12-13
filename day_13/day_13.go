@@ -11,23 +11,94 @@ type Pattern struct {
 	nCols      int
 }
 
+func findReflectionLine(axes []int) int {
+	ans := 0
+	for i := 0; i < len(axes)-1; i++ {
+		maxExtent := i + 1
+		if maxExtent > len(axes)-i-1 {
+			maxExtent = len(axes) - i - 1
+		}
+		match := true
+
+		for offSet := 0; offSet < maxExtent; offSet++ {
+			match = (axes[i-offSet] == axes[i+offSet+1]) && match
+
+			fmt.Println("Col: ", i+1, "MaxExtent: ", maxExtent, "Offset: ", offSet, "Vals: ", axes[i-offSet], axes[i+offSet+1], "Match: ", match)
+		}
+		if match {
+			ans = i + 1
+			fmt.Println("Reflection found at col ", i+1)
+			break
+		}
+	}
+	return ans
+}
+
+func (p *Pattern) fixSmudge() int {
+	initReflectionRow := findReflectionLine(p.rows)
+	initReflectionCol := findReflectionLine(p.cols)
+
+	for i := 0; i < len(p.rows); i++ {
+		for j := 0; j < len(p.cols); j++ {
+			p.cols[j] = p.cols[j] ^ (1 << i)
+			p.rows[i] = p.rows[i] ^ (1 << j)
+			newRow := findReflectionLine(p.rows)
+			newCol := findReflectionLine(p.cols)
+			if initReflectionRow != newRow {
+				return newRow
+			}
+			if initReflectionCol != newCol {
+				return newCol * 100
+			}
+			p.cols[j] = p.cols[j] ^ (1 << i)
+			p.rows[i] = p.rows[i] ^ (1 << j)
+		}
+	}
+
+	return -1
+}
+
+func (p *Pattern) getReflectionValue() int {
+	ans := findReflectionLine(p.cols)
+	fmt.Println("Reflection found at col ", ans, "Pattern ", p)
+	ans += findReflectionLine(p.rows) * 100
+
+	return ans
+}
+
 func playPart0(fileName string) int {
 	input := readFile(fileName)
 	fmt.Println(input)
 	patterns := parseForPart0(input)
 	fmt.Println(patterns)
-	return 0
+	result := 0
+	for _, p := range patterns {
+		result += p.getReflectionValue()
+	}
+	return result
+}
+
+func playPart1(fileName string) int {
+	input := readFile(fileName)
+	fmt.Println(input)
+	patterns := parseForPart0(input)
+	fmt.Println(patterns)
+	result := 0
+	for _, p := range patterns {
+		result += p.fixSmudge()
+	}
+	return result
 }
 
 func parseForPart0(input []string) []*Pattern {
 	ans := make([]*Pattern, 0)
-	currPattern := &Pattern{rows: make([]int, 0), cols: make([]int, 0)}
+	currPattern := &Pattern{}
 	ans = append(ans, currPattern)
 	for _, line := range input {
 		if len(line) == 0 {
 			fmt.Println("New Pattern")
+			currPattern = &Pattern{}
 			ans = append(ans, currPattern)
-			currPattern = &Pattern{rows: make([]int, 0), cols: make([]int, 0)}
 			continue
 		}
 		currPattern.nCols = len(line)
@@ -49,7 +120,8 @@ func parseForPart0(input []string) []*Pattern {
 		fmt.Printf("Line: %s, Bits: %b \n", line, currRow)
 		currPattern.rows = append(currPattern.rows, currRow)
 	}
-	for _, pattern := range ans {
+	for idx := 0; idx < len(ans); idx++ {
+		pattern := ans[idx]
 		for i := 0; i < pattern.nCols; i++ {
 			pattern.cols = append(pattern.cols, 0)
 			for j := 0; j < len(pattern.rows); j++ {
@@ -65,11 +137,6 @@ func parseForPart0(input []string) []*Pattern {
 	return ans
 }
 
-func playPart1(fileName string) int {
-
-	return 0
-}
-
 func main() {
 	retVal := playPart0("test0.txt")
 	fmt.Println(retVal)
@@ -80,14 +147,14 @@ func main() {
 
 	retVal = playPart0("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 43614 {
 		panic("Part 0 failed")
 	}
 	fmt.Println("Part 0 passed")
 
 	retVal = playPart1("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 400 {
 		panic("Test 1 failed")
 	}
 	fmt.Println("Test 1 passed")
