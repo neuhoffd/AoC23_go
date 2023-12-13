@@ -12,54 +12,54 @@ type Record struct {
 	groups []byte
 }
 
-func (r *Record) dp(i, j int, c [][]int) int {
-	if i >= len(r.record) {
-		if j < len(r.groups) {
+func (r *Record) recurse(recordIdx, groupIdx int, dpCache [][]int) int {
+	if recordIdx >= len(r.record) {
+		if groupIdx < len(r.groups) {
 			return 0
 		}
 		return 1
 	}
-	if c[i][j] != -1 {
-		return c[i][j]
+	if dpCache[recordIdx][groupIdx] != -1 {
+		return dpCache[recordIdx][groupIdx]
 	}
 	res := 0
-	if r.record[i] == '.' {
-		res += r.dp(i+1, j, c)
+	if r.record[recordIdx] == '.' {
+		res += r.recurse(recordIdx+1, groupIdx, dpCache)
 	} else {
-		if r.record[i] == '?' {
-			res += r.dp(i+1, j, c)
+		if r.record[recordIdx] == '?' {
+			res += r.recurse(recordIdx+1, groupIdx, dpCache)
 		}
-		if j < len(r.groups) {
+		if groupIdx < len(r.groups) {
 			damagedCount := byte(0)
-			for k := i; k < len(r.record); k++ {
-				if r.record[k] == '.' || (r.groups[j] == damagedCount && r.record[k] == '?') || damagedCount > r.groups[j] {
+			for lookAheadIdx := recordIdx; lookAheadIdx < len(r.record); lookAheadIdx++ {
+				if r.record[lookAheadIdx] == '.' || (r.groups[groupIdx] == damagedCount && r.record[lookAheadIdx] == '?') || damagedCount > r.groups[groupIdx] {
 					break
 				}
 				damagedCount++
 			}
-			if damagedCount == r.groups[j] {
-				if i+int(damagedCount) < len(r.record) && r.record[i+int(damagedCount)] != '#' {
-					res += r.dp(i+int(damagedCount)+1, j+1, c)
+			if damagedCount == r.groups[groupIdx] {
+				if recordIdx+int(damagedCount) < len(r.record) && r.record[recordIdx+int(damagedCount)] != '#' {
+					res += r.recurse(recordIdx+int(damagedCount)+1, groupIdx+1, dpCache)
 				} else {
-					res += r.dp(i+int(damagedCount), j+1, c)
+					res += r.recurse(recordIdx+int(damagedCount), groupIdx+1, dpCache)
 				}
 			}
 		}
 	}
-	c[i][j] = res
+	dpCache[recordIdx][groupIdx] = res
 	return res
 }
 
 func (r *Record) countArrangements() int {
-	var c [][]int
+	var dpCache [][]int
 	for i := 0; i < len(r.record); i++ {
-		c = append(c, make([]int, len(r.groups)+1))
+		dpCache = append(dpCache, make([]int, len(r.groups)+1))
 		for j := 0; j < len(r.groups)+1; j++ {
-			c[i][j] = -1
+			dpCache[i][j] = -1
 		}
 	}
 
-	return r.dp(0, 0, c)
+	return r.recurse(0, 0, dpCache)
 }
 
 func (r *Record) unfold(times int) {
