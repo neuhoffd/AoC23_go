@@ -9,11 +9,33 @@ import (
 func playPart0(fileName string) int {
 	input := readFile(fileName)
 	fmt.Println(input)
-	return 0
+	seq := parseForPart0(input)
+	fmt.Println(seq)
+	return computeHashSum(seq)
 }
 
-func parseForPart0(input []string) {
+func computeHashSum(seq []string) int {
+	ans := 0
+	for _, s := range seq {
+		ans += hash(s)
+	}
+	return ans
+}
 
+func hash(s string) int {
+	ans := 0
+	for _, c := range s {
+		fmt.Println(c, int(c))
+		val := int(c)
+		ans += val
+		ans = ans * 17
+		ans = ans % 256
+	}
+	return ans
+}
+
+func parseForPart0(input []string) []string {
+	return strings.Split(input[0], ",")
 }
 
 func playPart1(fileName string) int {
@@ -24,7 +46,7 @@ func playPart1(fileName string) int {
 func main() {
 	retVal := playPart0("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 1320 {
 		panic("Test 0 failed")
 	}
 	fmt.Println("Test 0 passed")
