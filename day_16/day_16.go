@@ -116,7 +116,6 @@ func shootBeam(g [][]Tile, b Beam) int {
 		}
 		steps++
 	}
-
 	return ans
 }
 
