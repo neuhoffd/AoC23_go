@@ -33,28 +33,20 @@ func printS(g [][]Tile) string {
 	return ans
 }
 
-func countEnergized(g [][]Tile) int {
-	ans := 0
-	for _, row := range g {
-		for _, tile := range row {
-			if tile.energized {
-				ans++
-			}
-		}
-	}
-	return ans
-}
-
-func shootBeam(g [][]Tile) int {
+func shootBeam(g [][]Tile, b Beam) int {
 	ans := 0
 	beams := []Beam{
-		Beam{dir: []int{0, 1},
-			pos: []int{0, 0}},
+		b,
+	}
+	for row := 0; row < len(g); row++ {
+		for col := 0; col < len(g[row]); col++ {
+			g[row][col].visited = make([][]int, 0)
+			g[row][col].energized = false
+		}
 	}
 	steps := 0
 	for len(beams) > 0 {
 		for i := 0; i < len(beams); i++ {
-			//fmt.Println(beams)
 			if beams[i].pos[0] >= len(g) || beams[i].pos[1] >= len(g[0]) || beams[i].pos[0] < 0 || beams[i].pos[1] < 0 {
 				beams = append(beams[:i], beams[i+1:]...)
 				continue
@@ -64,11 +56,7 @@ func shootBeam(g [][]Tile) int {
 				ans++
 				g[beams[i].pos[0]][beams[i].pos[1]].energized = true
 			}
-			/*if slices.ContainsFunc(g[beams[i].pos[0]][beams[i].pos[1]].visited, func(inp []int) bool { return inp[0] == beams[i].dir[0] && inp[1] == beams[i].dir[1] }) {
-				beams = append(beams[:i], beams[i+1:]...)
-				continue
-			}*/
-			if len(g[beams[i].pos[0]][beams[i].pos[1]].visited) > 1000 {
+			if len(g[beams[i].pos[0]][beams[i].pos[1]].visited) > 100 {
 				beams = append(beams[:i], beams[i+1:]...)
 				continue
 			}
@@ -125,12 +113,9 @@ func shootBeam(g [][]Tile) int {
 			}
 			beams[i].pos[0] += beams[i].dir[0]
 			beams[i].pos[1] += beams[i].dir[1]
-			//_ = printS(g)
-			//fmt.Println(countEnergized(g))
 		}
 		steps++
 	}
-	//fmt.Println(ans, countEnergized(g))
 
 	return ans
 }
@@ -138,7 +123,45 @@ func shootBeam(g [][]Tile) int {
 func playPart0(fileName string) int {
 	input := readFile(fileName)
 	tiles := parseForPart0(input)
-	return shootBeam(tiles)
+	return shootBeam(tiles, Beam{pos: []int{0, 0}, dir: []int{0, 1}})
+}
+
+func playPart1(fileName string) int {
+	input := readFile(fileName)
+	tiles := parseForPart0(input)
+	result := 0
+	cnt := 0
+	for i := 0; i < len(tiles); i++ {
+		val := shootBeam(tiles, Beam{pos: []int{i, 0}, dir: []int{0, 1}})
+		if val > result {
+			result = val
+		}
+		val = shootBeam(tiles, Beam{pos: []int{i, len(tiles[0]) - 1}, dir: []int{0, -1}})
+		if val > result {
+			result = val
+		}
+		cnt += 2
+		if cnt%1000 == 0 {
+			fmt.Println(cnt)
+		}
+	}
+	for i := 0; i < len(tiles[0]); i++ {
+		val := shootBeam(tiles, Beam{pos: []int{0, i}, dir: []int{1, 0}})
+		if val > result {
+			result = val
+		}
+		val = shootBeam(tiles, Beam{pos: []int{len(tiles) - 1, i}, dir: []int{-1, 0}})
+		if val > result {
+			result = val
+		}
+		cnt += 2
+		if cnt%1000 == 0 {
+			fmt.Println(cnt)
+		}
+	}
+	printS(tiles)
+
+	return result
 }
 
 func parseForPart0(input []string) [][]Tile {
@@ -156,11 +179,6 @@ func parseForPart0(input []string) [][]Tile {
 	return ans
 }
 
-func playPart1(fileName string) int {
-
-	return 0
-}
-
 func main() {
 	retVal := playPart0("test0.txt")
 	fmt.Println(retVal)
@@ -171,21 +189,21 @@ func main() {
 
 	retVal = playPart0("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 7496 {
 		panic("Part 0 failed")
 	}
 	fmt.Println("Part 0 passed")
 
 	retVal = playPart1("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 51 {
 		panic("Test 1 failed")
 	}
 	fmt.Println("Test 1 passed")
 
 	retVal = playPart1("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 7932 {
 		panic("Part 1 failed")
 	}
 	fmt.Println("Part 1 passed")
