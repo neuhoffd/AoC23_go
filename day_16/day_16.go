@@ -3,18 +3,19 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 )
 
 type Beam struct {
-	dir, pos []int
+	dir, pos [2]int
 }
 
 type Tile struct {
-	pos       []int
+	pos       [2]int
 	symbol    string
 	energized bool
-	visited   [][]int
+	visited   [][2]int
 }
 
 func printS(g [][]Tile) string {
@@ -40,7 +41,7 @@ func shootBeam(g [][]Tile, b Beam) int {
 	}
 	for row := 0; row < len(g); row++ {
 		for col := 0; col < len(g[row]); col++ {
-			g[row][col].visited = make([][]int, 0)
+			g[row][col].visited = make([][2]int, 0)
 			g[row][col].energized = false
 		}
 	}
@@ -51,12 +52,11 @@ func shootBeam(g [][]Tile, b Beam) int {
 				beams = append(beams[:i], beams[i+1:]...)
 				continue
 			}
-
 			if !g[beams[i].pos[0]][beams[i].pos[1]].energized {
 				ans++
 				g[beams[i].pos[0]][beams[i].pos[1]].energized = true
 			}
-			if len(g[beams[i].pos[0]][beams[i].pos[1]].visited) > 100 {
+			if slices.Contains(g[beams[i].pos[0]][beams[i].pos[1]].visited, beams[i].dir) {
 				beams = append(beams[:i], beams[i+1:]...)
 				continue
 			}
@@ -86,8 +86,8 @@ func shootBeam(g [][]Tile, b Beam) int {
 				{
 					if beams[i].dir[1] != 0 {
 						beams = append(beams, Beam{
-							pos: []int{beams[i].pos[0], beams[i].pos[1]},
-							dir: []int{(-1) * beams[i].dir[1], 0},
+							pos: [2]int{beams[i].pos[0], beams[i].pos[1]},
+							dir: [2]int{(-1) * beams[i].dir[1], 0},
 						})
 						beams[len(beams)-1].pos[0] += beams[len(beams)-1].dir[0]
 						beams[len(beams)-1].pos[1] += beams[len(beams)-1].dir[1]
@@ -100,8 +100,8 @@ func shootBeam(g [][]Tile, b Beam) int {
 				{
 					if beams[i].dir[0] != 0 {
 						beams = append(beams, Beam{
-							pos: []int{beams[i].pos[0], beams[i].pos[1]},
-							dir: []int{0, (-1) * beams[i].dir[0]},
+							pos: [2]int{beams[i].pos[0], beams[i].pos[1]},
+							dir: [2]int{0, (-1) * beams[i].dir[0]},
 						})
 						beams[len(beams)-1].pos[0] += beams[len(beams)-1].dir[0]
 						beams[len(beams)-1].pos[1] += beams[len(beams)-1].dir[1]
@@ -122,44 +122,29 @@ func shootBeam(g [][]Tile, b Beam) int {
 func playPart0(fileName string) int {
 	input := readFile(fileName)
 	tiles := parseForPart0(input)
-	return shootBeam(tiles, Beam{pos: []int{0, 0}, dir: []int{0, 1}})
+	return shootBeam(tiles, Beam{pos: [2]int{0, 0}, dir: [2]int{0, 1}})
 }
 
 func playPart1(fileName string) int {
 	input := readFile(fileName)
 	tiles := parseForPart0(input)
 	result := 0
-	cnt := 0
 	for i := 0; i < len(tiles); i++ {
-		val := shootBeam(tiles, Beam{pos: []int{i, 0}, dir: []int{0, 1}})
-		if val > result {
-			result = val
-		}
-		val = shootBeam(tiles, Beam{pos: []int{i, len(tiles[0]) - 1}, dir: []int{0, -1}})
-		if val > result {
-			result = val
-		}
-		cnt += 2
-		if cnt%1000 == 0 {
-			fmt.Println(cnt)
+		for _, j := range []int{-1, 1} {
+			val := shootBeam(tiles, Beam{pos: [2]int{i, 0}, dir: [2]int{0, j}})
+			if val > result {
+				result = val
+			}
 		}
 	}
 	for i := 0; i < len(tiles[0]); i++ {
-		val := shootBeam(tiles, Beam{pos: []int{0, i}, dir: []int{1, 0}})
-		if val > result {
-			result = val
-		}
-		val = shootBeam(tiles, Beam{pos: []int{len(tiles) - 1, i}, dir: []int{-1, 0}})
-		if val > result {
-			result = val
-		}
-		cnt += 2
-		if cnt%1000 == 0 {
-			fmt.Println(cnt)
+		for _, j := range []int{-1, 1} {
+			val := shootBeam(tiles, Beam{pos: [2]int{0, i}, dir: [2]int{j, 0}})
+			if val > result {
+				result = val
+			}
 		}
 	}
-	printS(tiles)
-
 	return result
 }
 
@@ -169,7 +154,7 @@ func parseForPart0(input []string) [][]Tile {
 		ans[row] = make([]Tile, len(input[row]))
 		for col := 0; col < len(input[row]); col++ {
 			ans[row][col] = Tile{
-				pos:       []int{row, col},
+				pos:       [2]int{row, col},
 				symbol:    string(input[row][col]),
 				energized: false,
 			}
