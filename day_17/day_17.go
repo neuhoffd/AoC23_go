@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"slices"
 	"strconv"
@@ -18,6 +19,10 @@ type Dir [2]int
 
 func (p Pos) moveForward(dir Dir) Pos {
 	return Pos{p[0] + dir[0], p[1] + dir[1]}
+}
+
+func (p Pos) getDistanceTo(x Pos) int {
+	return int(math.Abs(float64(p[0]-x[0])) + math.Abs(float64(p[1]-x[1])))
 }
 
 func (p Pos) moveBackward(dir Dir) Pos {
@@ -89,29 +94,52 @@ func (m *Map) printPath(p *Path) string {
 
 func (m *Map) minimumHeatlLoss(start, end Pos, maxStraight int) int {
 	paths := make([]*Path, 0)
-	fmt.Println(paths)
 	paths = append(paths, &Path{
 		pos:        start,
 		heatLoss:   0,
-		posHistory: []Pos{},
-		dirHistory: []Dir{},
+		posHistory: make([]Pos, 0),
+		dirHistory: make([]Dir, 0),
 	})
+	visited := make(map[Pos]map[int]int)
 	currPos := start
 	solutionCandidates := make([]*Path, 0)
-
+	counter := 0
 	for len(paths) > 0 {
-		newPaths := make([]*Path, 0)
-		for i := 0; i < len(paths); i++ {
-			currPath := paths[i]
-			currPos = currPath.pos
-			fmt.Printf("Curr Pos %d\n", currPos)
+		counter++
+		currPath := paths[0]
+		currPos = currPath.pos
+		/*alarmPos := Pos{1, 5}
+		if currPos == alarmPos {
+			fmt.Println("obacht")
+		}*/
+		if counter%1000 == 0 {
+			fmt.Printf("Counter %d  Num paths %d  Curr Pos %d  Curr Heat Loss %d  Curr Path Length %d\n", counter, len(paths), currPos, currPath.heatLoss, len(currPath.posHistory))
+			//m.printPath(currPath)
+		}
+		//m.printPath(currPath)
+		if len(currPath.posHistory) > 0 && currPath.posHistory[len(currPath.posHistory)-1].getDistanceTo(currPos) > 1 {
+			fmt.Println("This shouldn't happen")
+		}
+		//m.printPath(currPath)
+		if currPos == end {
 			m.printPath(currPath)
-			if currPath.pos == end {
-				solutionCandidates = append(solutionCandidates, currPath)
-				continue
-			}
+			return currPath.heatLoss
+		}
+		shortestPath, ok := visited[currPos][currPath.heatLoss]
+		isCurrPosVisited := false
+
+		isCurrPosVisited = ok && len(currPath.posHistory) >= shortestPath
+		if isCurrPosVisited {
+			//fmt.Println()
+		}
+
+		if !ok || !isCurrPosVisited {
 			for _, dir := range []Dir{{1, 0}, {-1, 0}, {0, 1}, {0, -1}} {
 				candPos := currPos.moveForward(dir)
+				if candPos.getDistanceTo(currPos) > 1 {
+					fmt.Println("This shouldn't happen")
+				}
+
 				if candPos[0] < 0 || candPos[0] >= m.rowDim || candPos[1] < 0 || candPos[1] >= m.colDim {
 					continue
 				}
@@ -121,17 +149,59 @@ func (m *Map) minimumHeatlLoss(start, end Pos, maxStraight int) int {
 				if !currPath.isDirValid(dir, maxStraight) {
 					continue
 				}
-				newPaths = append(newPaths, &Path{
+				if candPos.getDistanceTo(currPos) > 1 {
+					fmt.Println("This shouldn't happen")
+				}
+				if len(currPath.posHistory) > 0 && currPath.posHistory[len(currPath.posHistory)-1].getDistanceTo(candPos) > 2 {
+					fmt.Println("This shouldn't happen")
+				}
+				shortestPath, ok := visited[candPos][currPath.heatLoss+m.blocks[candPos]]
+				if ok {
+					if shortestPath < len(currPath.posHistory)+1 {
+						continue
+					}
+				}
+
+				newPosHistory := make([]Pos, len(currPath.posHistory))
+				copy(newPosHistory, currPath.posHistory)
+				newPosHistory = append(newPosHistory, currPos)
+				newDirHistory := make([]Dir, len(currPath.dirHistory))
+				copy(newDirHistory, currPath.dirHistory)
+				newDirHistory = append(newDirHistory, dir)
+				paths = append(paths, &Path{
 					pos:        candPos,
 					heatLoss:   currPath.heatLoss + m.blocks[candPos],
-					posHistory: append(currPath.posHistory, currPos),
-					dirHistory: append(currPath.dirHistory, dir),
+					posHistory: newPosHistory,
+					dirHistory: newDirHistory,
 				})
+
 			}
+			shortestPath, ok = visited[currPos][currPath.heatLoss]
+			if ok {
+				if shortestPath > len(currPath.posHistory) {
+					visited[currPos][currPath.heatLoss] = len(currPath.posHistory)
+				}
+			} else {
+				if len(visited[currPos]) == 0 {
+					visited[currPos] = make(map[int]int)
+				}
+				visited[currPos][currPath.heatLoss] = len(currPath.posHistory)
+			}
+			paths = paths[1:]
+			slices.SortFunc(paths, func(a, b *Path) int {
+				if a.heatLoss == b.heatLoss {
+					return len(a.posHistory) - len(b.posHistory)
+				}
+				return a.heatLoss - b.heatLoss
+			})
+		} else {
+			paths = paths[1:]
+			//fmt.Printf("Letting path %+v die\n", currPath)
 		}
-		paths = newPaths
 	}
-	slices.SortFunc(solutionCandidates, func(a, b *Path) int { return b.heatLoss - a.heatLoss })
+	slices.SortFunc(solutionCandidates, func(a, b *Path) int {
+		return b.heatLoss - a.heatLoss
+	})
 
 	return solutionCandidates[0].heatLoss
 }
