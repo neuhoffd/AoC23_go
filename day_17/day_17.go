@@ -1,13 +1,70 @@
 package main
 
 import (
+	"container/heap"
 	"fmt"
-	"math"
 	"os"
 	"slices"
 	"strconv"
 	"strings"
 )
+
+type Path struct {
+	pos        Pos
+	heatLoss   int
+	posHistory []Pos
+	dirHistory []Dir
+	id         int
+}
+
+type State struct {
+	pos      Pos
+	dir      Dir
+	heatLoss int
+	straight int
+	index    int
+	path     *Path
+}
+
+type PriorityQueue []*State
+
+func (pq PriorityQueue) Len() int { return len(pq) }
+
+func (pq PriorityQueue) Less(i, j int) bool {
+	if pq[i].heatLoss == pq[j].heatLoss {
+		return pq[i].path.id < pq[j].path.id
+	}
+	return pq[i].heatLoss < pq[j].heatLoss
+}
+
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].index = i
+	pq[j].index = j
+}
+
+func (pq *PriorityQueue) Push(x any) {
+	state, _ := x.(*State)
+	item := &State{
+		path:     state.path,
+		pos:      state.pos,
+		dir:      state.dir,
+		heatLoss: state.heatLoss,
+		straight: state.straight,
+	}
+	item.index = len(*pq)
+	*pq = append(*pq, item)
+}
+
+func (pq *PriorityQueue) Pop() any {
+	oldQueue := *pq
+	n := len(oldQueue)
+	item := oldQueue[n-1]
+	oldQueue[n-1] = nil
+	item.index = -1
+	*pq = oldQueue[0 : n-1]
+	return item
+}
 
 type Map struct {
 	blocks         map[Pos]int
@@ -19,33 +76,6 @@ type Dir [2]int
 
 func (p Pos) moveForward(dir Dir) Pos {
 	return Pos{p[0] + dir[0], p[1] + dir[1]}
-}
-
-func (p Pos) getDistanceTo(x Pos) int {
-	return int(math.Abs(float64(p[0]-x[0])) + math.Abs(float64(p[1]-x[1])))
-}
-
-func (p Pos) moveBackward(dir Dir) Pos {
-	return Pos{p[0] - dir[0], p[1] - dir[1]}
-}
-
-type Path struct {
-	pos        Pos
-	heatLoss   int
-	posHistory []Pos
-	dirHistory []Dir
-	id         int
-}
-
-func (p *Path) isDirValid(dir Dir, maxStraight int) bool {
-	if len(p.dirHistory) < maxStraight {
-		return true
-	}
-	ans := false
-	for i := 0; i < maxStraight; i++ {
-		ans = (p.dirHistory[len(p.dirHistory)-i-1] != dir) || ans
-	}
-	return ans
 }
 
 func (m *Map) printS() string {
@@ -93,112 +123,98 @@ func (m *Map) printPath(p *Path) string {
 	return ans
 }
 
-func (m *Map) minimumHeatlLoss(start, end Pos, maxStraight int) int {
-	paths := make([]*Path, 0)
-	paths = append(paths, &Path{
+func (s State) encode() EncodedState {
+	return EncodedState{
+		pos:      s.pos,
+		dir:      s.dir,
+		straight: s.straight,
+	}
+}
+
+type EncodedState struct {
+	pos      Pos
+	dir      Dir
+	straight int
+}
+
+func (m *Map) minimumHeatlLoss(start, end Pos, minStraight, maxStraight int) int {
+	counter := 0
+	seen := make(map[EncodedState]struct{})
+
+	pq := make(PriorityQueue, 0)
+	heap.Init(&pq)
+	initPath := &Path{
 		pos:        start,
 		heatLoss:   0,
 		posHistory: make([]Pos, 0),
 		dirHistory: make([]Dir, 0),
 		id:         0,
-	})
-	visited := make(map[Pos]map[[3]Pos]int)
-	currPos := start
-	solutionCandidates := make([]*Path, 0)
-	counter := 0
-	for len(paths) > 0 {
-		counter++
-		currPath := paths[0]
-		currPos = currPath.pos
-		if counter%100000 == 0 {
-			fmt.Printf("Counter %d  Num paths %d  Curr Pos %d  Curr Heat Loss %d  Curr Path Length %d Curr len of visitd %d\n", counter, len(paths), currPos, currPath.heatLoss, len(currPath.posHistory), len(visited[currPos]))
-		}
-		if currPos == end {
+	}
+	initState := &State{
+		pos:      start,
+		dir:      [2]int{},
+		heatLoss: 0,
+		straight: 0,
+		index:    0,
+		path:     initPath,
+	}
+
+	heap.Push(&pq, initState)
+
+	for len(pq) > 0 {
+		currState := heap.Pop(&pq).(*State)
+		currPos := currState.pos
+		currPath := currState.path
+		if currPos == end && currState.straight >= minStraight-1 {
 			m.printPath(currPath)
 			return currPath.heatLoss
 		}
-		isCurrPosVisited := false
-		_, ok := visited[currPos]
-		var currPosHistory [3]Pos
-		for i := 0; i < len(currPosHistory); i++ {
-			if i >= len(currPath.posHistory) {
-				currPosHistory[len(currPosHistory)-1-i] = Pos{0, 0}
-			} else {
-				currPosHistory[len(currPosHistory)-1-i] = currPath.posHistory[len(currPath.posHistory)-1-i]
-			}
+		if _, isSeen := seen[currState.encode()]; isSeen {
+			continue
 		}
-		if !ok {
-			visited[currPos] = make(map[[3]Pos]int)
-			visited[currPos][currPosHistory] = currPath.heatLoss
-		} else {
-			val, ok := visited[currPos][currPosHistory]
-			if ok {
-				if val <= currPath.heatLoss {
-					isCurrPosVisited = true
-				}
+		seen[currState.encode()] = struct{}{}
+		for _, dir := range []Dir{{1, 0}, {0, 1}, {-1, 0}, {0, -1}} {
+			counter++
+			newStraight := 0
+			if dir == currState.dir {
+				newStraight = currState.straight + 1
 			} else {
-				visited[currPos][currPosHistory] = currPath.heatLoss
+				if currState.straight < minStraight-1 && (dir != currState.dir && currState.dir != Dir{0, 0}) {
+					continue
+				}
 			}
-		}
-
-		if !isCurrPosVisited {
-			for _, dir := range []Dir{{1, 0}, {-1, 0}, {0, 1}, {0, -1}} {
-				candPos := currPos.moveForward(dir)
-				if candPos[0] < 0 || candPos[0] >= m.rowDim || candPos[1] < 0 || candPos[1] >= m.colDim {
-					continue
-				}
-				if slices.Contains(currPath.posHistory, candPos) {
-					continue
-				}
-				if !currPath.isDirValid(dir, maxStraight) {
-					continue
-				}
-				var currPosHistory [3]Pos
-				for i := 1; i < len(currPosHistory); i++ {
-					if i >= len(currPath.posHistory) {
-						currPosHistory[len(currPosHistory)-1-i] = Pos{0, 0}
-					} else {
-						currPosHistory[len(currPosHistory)-1-i] = currPath.posHistory[len(currPath.posHistory)-i]
-					}
-				}
-				currPosHistory[2] = currPos
-				val, ok := visited[candPos][currPosHistory]
-				if ok {
-					if val <= currPath.heatLoss+m.blocks[candPos] {
-						continue
-					}
-				}
-
-				newPosHistory := make([]Pos, len(currPath.posHistory))
-				copy(newPosHistory, currPath.posHistory)
-				newPosHistory = append(newPosHistory, currPos)
-				newDirHistory := make([]Dir, len(currPath.dirHistory))
-				copy(newDirHistory, currPath.dirHistory)
-				newDirHistory = append(newDirHistory, dir)
-				paths = append(paths, &Path{
+			if newStraight > maxStraight-1 {
+				continue
+			}
+			candPos := currPos.moveForward(dir)
+			if candPos[0] < 0 || candPos[0] >= m.rowDim || candPos[1] < 0 || candPos[1] >= m.colDim || slices.Contains(currPath.posHistory, candPos) {
+				continue
+			}
+			newPosHistory := make([]Pos, len(currPath.posHistory))
+			copy(newPosHistory, currPath.posHistory)
+			newPosHistory = append(newPosHistory, currPos)
+			newDirHistory := make([]Dir, len(currPath.dirHistory))
+			copy(newDirHistory, currPath.dirHistory)
+			newDirHistory = append(newDirHistory, dir)
+			newState := State{
+				pos:      candPos,
+				dir:      dir,
+				heatLoss: currPath.heatLoss + m.blocks[candPos],
+				straight: newStraight,
+				path: &Path{
 					pos:        candPos,
 					heatLoss:   currPath.heatLoss + m.blocks[candPos],
 					posHistory: newPosHistory,
 					dirHistory: newDirHistory,
-					id:         len(paths),
-				})
+					id:         counter,
+				}}
+			if _, isSeen := seen[newState.encode()]; isSeen {
+				continue
 			}
-			paths = paths[1:]
-			slices.SortFunc(paths, func(a, b *Path) int {
-				if a.heatLoss == b.heatLoss {
-					return b.id - a.id
-				}
-				return a.heatLoss - b.heatLoss
-			})
-		} else {
-			paths = paths[1:]
+			heap.Push(&pq, &newState)
 		}
 	}
-	slices.SortFunc(solutionCandidates, func(a, b *Path) int {
-		return b.heatLoss - a.heatLoss
-	})
-
-	return solutionCandidates[0].heatLoss
+	return -1
 }
 
 func playPart0(fileName string) int {
@@ -206,7 +222,15 @@ func playPart0(fileName string) int {
 	fmt.Println(input)
 	m := parseForPart0(input)
 	m.printS()
-	return m.minimumHeatlLoss(Pos{0, 0}, Pos{m.rowDim - 1, m.colDim - 1}, 3)
+	return m.minimumHeatlLoss(Pos{0, 0}, Pos{m.rowDim - 1, m.colDim - 1}, 0, 3)
+}
+
+func playPart1(fileName string) int {
+	input := readFile(fileName)
+	fmt.Println(input)
+	m := parseForPart0(input)
+	m.printS()
+	return m.minimumHeatlLoss(Pos{0, 0}, Pos{m.rowDim - 1, m.colDim - 1}, 4, 10)
 }
 
 func parseForPart0(input []string) *Map {
@@ -223,12 +247,8 @@ func parseForPart0(input []string) *Map {
 	return ans
 }
 
-func playPart1(fileName string) int {
-
-	return 0
-}
-
 func main() {
+
 	retVal := playPart0("test0.txt")
 	fmt.Println(retVal)
 	if retVal != 102 {
@@ -245,14 +265,14 @@ func main() {
 
 	retVal = playPart1("test0.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 94 {
 		panic("Test 1 failed")
 	}
 	fmt.Println("Test 1 passed")
 
 	retVal = playPart1("input.txt")
 	fmt.Println(retVal)
-	if retVal != 0 {
+	if retVal != 894 {
 		panic("Part 1 failed")
 	}
 	fmt.Println("Part 1 passed")
