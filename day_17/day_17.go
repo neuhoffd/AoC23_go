@@ -11,10 +11,8 @@ import (
 
 type Path struct {
 	pos        Pos
-	heatLoss   int
 	posHistory []Pos
 	dirHistory []Dir
-	id         int
 }
 
 type State struct {
@@ -28,12 +26,17 @@ type State struct {
 
 type PriorityQueue []*State
 
+type Map struct {
+	blocks         map[Pos]int
+	rowDim, colDim int
+}
+
+type Pos [2]int
+type Dir [2]int
+
 func (pq PriorityQueue) Len() int { return len(pq) }
 
 func (pq PriorityQueue) Less(i, j int) bool {
-	if pq[i].heatLoss == pq[j].heatLoss {
-		return pq[i].path.id < pq[j].path.id
-	}
 	return pq[i].heatLoss < pq[j].heatLoss
 }
 
@@ -65,14 +68,6 @@ func (pq *PriorityQueue) Pop() any {
 	*pq = oldQueue[0 : n-1]
 	return item
 }
-
-type Map struct {
-	blocks         map[Pos]int
-	rowDim, colDim int
-}
-
-type Pos [2]int
-type Dir [2]int
 
 func (p Pos) moveForward(dir Dir) Pos {
 	return Pos{p[0] + dir[0], p[1] + dir[1]}
@@ -145,10 +140,8 @@ func (m *Map) minimumHeatlLoss(start, end Pos, minStraight, maxStraight int) int
 	heap.Init(&pq)
 	initPath := &Path{
 		pos:        start,
-		heatLoss:   0,
 		posHistory: make([]Pos, 0),
 		dirHistory: make([]Dir, 0),
-		id:         0,
 	}
 	initState := &State{
 		pos:      start,
@@ -167,7 +160,7 @@ func (m *Map) minimumHeatlLoss(start, end Pos, minStraight, maxStraight int) int
 		currPath := currState.path
 		if currPos == end && currState.straight >= minStraight-1 {
 			m.printPath(currPath)
-			return currPath.heatLoss
+			return currState.heatLoss
 		}
 		if _, isSeen := seen[currState.encode()]; isSeen {
 			continue
@@ -199,14 +192,12 @@ func (m *Map) minimumHeatlLoss(start, end Pos, minStraight, maxStraight int) int
 			newState := State{
 				pos:      candPos,
 				dir:      dir,
-				heatLoss: currPath.heatLoss + m.blocks[candPos],
+				heatLoss: currState.heatLoss + m.blocks[candPos],
 				straight: newStraight,
 				path: &Path{
 					pos:        candPos,
-					heatLoss:   currPath.heatLoss + m.blocks[candPos],
 					posHistory: newPosHistory,
 					dirHistory: newDirHistory,
-					id:         counter,
 				}}
 			if _, isSeen := seen[newState.encode()]; isSeen {
 				continue
