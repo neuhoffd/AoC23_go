@@ -32,8 +32,6 @@ fn get_direction(cmd: char) -> (i64, i64) {
 }
 
 fn main() {
-    let mut res: i64;
-
     assert_eq!(play(".\\test0.txt", true), 62);
     assert_eq!(play(".\\input.txt", true), 95356);
 
